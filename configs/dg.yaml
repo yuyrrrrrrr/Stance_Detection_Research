@@ -1,0 +1,27 @@
+# =============================================================================
+# dg.yaml —— 领域泛化损失权重与调度
+# 总损失：L_total = L_CE + λs·L_SupCon + λp·L_Proto + λd·L_Domain
+# L_SupCon 正样本对限定为「同立场 + 不同目标」；L_Domain 同时判别「真实域 + 增强风格」。
+# =============================================================================
+
+loss:
+  ce: 1.0
+  supcon: 0.1                  # λs  监督对比学习
+  proto: 0.05                  # λp  原型对齐
+  domain: 0.1                  # λd  域对抗（DANN）
+
+supcon:
+  temperature: 0.1
+  # 正样本对 = 同 label 且不同 target_id（target_id 由 dataset 提供）
+
+proto:
+  temperature: 0.1
+
+domain:                        # DANN 域对抗
+  discriminator_hidden: 256
+  num_real_domains: 7          # 真实领域：新冠/世界事件/文化教育/娱乐消费/体育/权益/环保
+  # 增强风格与真实域一起送入判别器（使模型对「增强风格」也保持不变性）
+  aug_styles: [orig, eda, backtranslation, llm, edda]
+  lambda_schedule: ganin       # ganin | constant
+  grl_lambda: 1.0              # 初始梯度反转系数
+  alpha: 10.0                  # ganin 调度：λ(p)=2/(1+exp(-α·p))-1，p∈[0,1] 为训练进度

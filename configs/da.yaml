@@ -1,0 +1,38 @@
+# =============================================================================
+# da.yaml —— 数据增强预算与开关
+# 目标稀疏（训练集 94.2% 目标只出现一次）=> 增强着力点是【目标级】，不是类别平衡。
+# 增强样本只能进训练集，且必须通过三级质量闸门（标签一致性/去重/泄漏扫描）。
+# =============================================================================
+
+enabled: false                 # 总开关（先跑无增强基线）
+
+budget:
+  per_target: 3                # 每个目标最多增强条数（直击长尾）
+  per_label_cap: 50000         # 单类总量上限（防止失衡，虽整体已均衡）
+
+# ---- 各增强方法开关 ----
+methods:
+  eda:                         # EDA 简易增强（同义词替换/插入/交换/删除，中文需极性词保护）
+    enabled: false
+    alpha_sr: 0.1              # 同义词替换比例
+    p_ri: 0.1                  # 随机插入
+    p_rs: 0.1                  # 随机交换
+    p_rd: 0.1                  # 随机删除
+  backtranslation:             # 回译增强（中->英->中）
+    enabled: false
+    model: Helsinki-NLP/opus-mt-zh-en
+    back_model: Helsinki-NLP/opus-mt-en-zh
+  llm:                         # LLM 条件生成增强（目标改写 / 文本改写）
+    enabled: false
+    model: null                # Qwen/GLM 等本地模型或 API
+    style: rewrite_target      # rewrite_target | rewrite_text
+  edda:                        # 表征级/对抗式增强（EDDA）
+    enabled: false
+    epsilon: 1.0               # 扰动幅度
+    steps: 3                   # 对抗步数
+
+# ---- 三级质量闸门 ----
+quality_gates:
+  label_consistency: true      # 增强前后立场需一致（分类器/LLM 校验）
+  dedup: true                  # 去重（与原始样本及增强内去重）
+  leak_scan: true              # 扫描是否含测试目标 / 测试域（破坏零样本假设）

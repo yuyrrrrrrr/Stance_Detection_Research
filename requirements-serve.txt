@@ -1,0 +1,4 @@
+# 部署（FastAPI 推理服务）依赖；仅在 serve 阶段需要
+-r requirements.txt
+fastapi>=0.110
+uvicorn[standard]>=0.29

@@ -1,0 +1,54 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.ipynb_checkpoints/
+
+# ===== 环境 =====
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# ===== 数据产物（中间/增强/划分，由脚本再生，不进版本库）=====
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/processed/splits/*
+!data/processed/splits/.gitkeep
+data/processed/augmented/*
+!data/processed/augmented/.gitkeep
+# 原始数据默认保留在版本库；若不想跟踪上游大文件，取消下一行注释：
+# C-STANCE-main/
+
+# ===== 模型与缓存 =====
+*.pt
+*.bin
+*.onnx
+.cache/
+cache/
+models/
+huggingface/
+
+# ===== 输出（日志/ckpt/表/图）=====
+outputs/logs/*
+!outputs/logs/.gitkeep
+outputs/ckpt/*
+!outputs/ckpt/.gitkeep
+outputs/tables/*
+!outputs/tables/.gitkeep
+outputs/figs/*
+!outputs/figs/.gitkeep
+
+# ===== IDE / 工具 =====
+.idea/
+.vscode/
+.claude/
+*.log
+.DS_Store

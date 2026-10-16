@@ -1,0 +1,50 @@
+# =============================================================================
+# base.yaml —— 训练与推理共用的基础配置（唯一事实来源）
+# 模板、max_len、标签映射、路径、底座模型、训练超参均在此。
+# 增强预算见 da.yaml，领域泛化损失权重见 dg.yaml。
+# =============================================================================
+
+task: zssd
+
+# ---- 路径（相对项目根；由 src/common/config.py 解析为绝对路径）----
+paths:
+  raw_root: C-STANCE-main/C-STANCE-main/c_stance_dataset   # 上游原始数据（只读，勿改）
+  interim: data/interim                                    # 预处理 parquet
+  splits: data/processed/splits                            # 严格零样本划分清单
+  augmented: data/processed/augmented                      # 数据增强产物
+  outputs: outputs                                         # logs/ckpt/tables/figs
+
+# ---- 标签映射（唯一来源，训练与推理共用；0=支持 1=反对 2=中立）----
+labels: [支持, 反对, 中立]
+num_labels: 3
+
+# ---- 输入模板（唯一来源：src/common/format.py build_input 读取这里）----
+# {text} / {target} 为占位符；tokenizer(add_special_tokens=True) 后为
+#   [CLS] {target} [SEP] {text} [SEP]
+input_template:
+  pattern: "{target} [SEP] {text}"
+  max_length: 128
+
+# ---- 底座模型 ----
+model:
+  backbone: hfl/chinese-roberta-wwm-ext    # 主底座（对照：bert-base-chinese）
+  cache_dir: null                          # 设为本地路径可离线缓存
+  dropout: 0.1
+
+# ---- 数据加载 ----
+data:
+  batch_size: 32
+  num_workers: 4
+  subtask: B                               # A=目标级零样本, B=领域级零样本
+
+# ---- 训练超参 ----
+training:
+  epochs: 10
+  learning_rate: 2.0e-5
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+  seed: 42
+  grad_clip: 1.0
+  fp16: false                              # 本地 CPU 调试 false；GPU 训练可 true
+  eval_steps: 100
+  save_total_limit: 1

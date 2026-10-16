@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stance-detection-research"
+version = "0.1.0"
+description = "Chinese zero-shot stance detection: domain generalization + data augmentation"
+requires-python = ">=3.8"
+
+[tool.setuptools]
+packages = [
+    "src",
+    "src.common",
+    "src.data",
+    "src.data.augment",
+    "src.models",
+    "src.train",
+    "src.eval",
+    "src.serve",
+]
