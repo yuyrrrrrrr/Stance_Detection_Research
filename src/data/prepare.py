@@ -5,6 +5,7 @@
     row_id / subtask / domain_fold / split / domain / text / target /
     stance / stance_id / target_type / in_use / aug_style / source_file /
     target_id / domain_id
+    其中 row_id 全局唯一（{subtask}_{domain_fold}_{split}_{行号}）。
 
 清洗步骤（对应需求）：
   1. 列名统一：Text→text、Target 1→target、Stance 1→stance、Domain→domain、
@@ -68,7 +69,7 @@ def _read_csv(path: Path, split: str, subtask: str, domain_fold: str,
     df = pd.read_csv(path, encoding="utf-8-sig", dtype=str)
     df.columns = [c.strip() for c in df.columns]
     df = df.rename(columns=_COL_RENAME)
-    df["row_id"] = [f"{split}_{i:06d}" for i in range(len(df))]
+    df["row_id"] = [f"{subtask}_{domain_fold}_{split}_{i:06d}" for i in range(len(df))]  # 全局唯一
     df["subtask"] = subtask
     df["domain_fold"] = domain_fold
     df["split"] = split
