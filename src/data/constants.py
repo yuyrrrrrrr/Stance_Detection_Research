@@ -16,11 +16,13 @@ DOMAIN_ORDER: list = list(DOMAIN_FOLDERS.values())
 DOMAIN_TO_ID: dict = {d: i for i, d in enumerate(DOMAIN_ORDER)}
 
 # 标签：中文 -> id（0=支持 1=反对 2=中立）
-LABEL_TO_ID: dict = {"支持": 0, "反对": 1, "中立": 2}
-ID_TO_LABEL: dict = {v: k for k, v in LABEL_TO_ID.items()}
+# 注：立场标签（支持/反对/中立 → 0/1/2）映射的唯一来源是 configs/base.yaml，
+# 经 src/common/config.py 的 Config.label_to_id / id_to_label 提供，此处不再重复，
+# 避免出现第二份标签映射。
 
-# 目标类型：clauses 即论文中的 claim
-TYPE_MAP: dict = {"noun_phrases": "noun_phrases", "clauses": "claim", "claims": "claim"}
+# 目标类型：clauses 即论文中的 claim；内部统一为二值 noun_phrase / claim
+TYPE_MAP: dict = {"noun_phrases": "noun_phrase", "noun_phrase": "noun_phrase",
+                  "clauses": "claim", "claims": "claim", "claim": "claim"}
 
 # 子任务各划分的文件名
 SPLIT_FILES: dict = {

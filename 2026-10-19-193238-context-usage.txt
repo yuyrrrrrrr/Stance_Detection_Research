@@ -1,0 +1,181 @@
+ ▐▛███▛█   Claude Code v2.1.301
+▝▜██████▀  deepseek-v4-pro · API Usage Billing
+ ▝▝   ▝▝   D:\code\Stance_Detection_Research
+
+
+❯ /context 
+  ⎿  Context Usage
+     ⛀ ⛁ ⛁ ⛁ ⛀ ⛀ ⛀ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   deepseek-v4-pro[1m]
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   21k/1m tokens (2%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ 
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   Estimated usage by category
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System prompt: 2.2k tokens (0.2%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ System tools: 16.6k tokens (1.7%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Memory files: 126 tokens (0.0%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Skills: 2k tokens (0.2%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛁ Messages: 84 tokens (0.0%)
+     ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶ ⛶   ⛶ Free space: 979k (97.9%)
+
+     Memory files · /memory
+     └ C:\Users\27813.claude\projects\D--code-Stance-Detection-Research\memory\MEMORY.md: 126 tokens
+
+     Skills · /skills
+
+     Built-in
+     ├ dataviz: ~480 tokens
+     ├ claude-api: ~360 tokens
+     ├ update-config: ~240 tokens
+     ├ code-review: ~210 tokens
+     ├ run: ~120 tokens
+     ├ loop: ~120 tokens
+     ├ plugin-authoring: ~90 tokens
+     ├ workflow-authoring: ~80 tokens
+     ├ keybindings-help: ~80 tokens
+     ├ fewer-permission-prompts: ~60 tokens
+     ├ simplify: ~60 tokens
+     ├ security-review: ~30 tokens
+     └ init: ~20 tokens
+
+● Unknown command: /session
+
+● Args from unknown skill: list
+
+❯ 检查一下我当前项目设置的工程骨架,告诉我每个目录是什么,做什么,为什么要这样设计 
+
+  Thought for 26s, searched for 3 patterns, read 32 files, listed 1 directory (ctrl+o to expand)
+
+● 我已经把整个工程骨架读完了。下面按目录逐个说明它是什么、做什么、为什么这样设计
+  。
+
+  顶层结构一览
+
+  Stance_Detection_Research/
+  ├─ C-STANCE-main/        # 上游原始数据（只读，未改动）
+  ├─ src/                  # 自己的 Python 包（可安装）
+  ├─ configs/              # 实验配置（YAML）
+  ├─ data/                 # 数据产物（interim → processed）
+  ├─ outputs/              # 运行输出（日志/checkpoint/表/图）
+  ├─ scripts/              # 编排与检查脚本
+  ├─ README.md             # 项目主文档（含协议冻结、引用、致敬）
+  ├─ pyproject.toml        # 打包声明
+  ├─ requirements*.txt     # 分档依赖
+  └─ .gitignore / .claude   # 版本控制与 IDE/工具配置
+
+  ---
+
+  逐目录说明
+
+  C-STANCE-main/ — 上游原始数据（只读区）
+
+  - 是什么：C-STANCE 论文作者公开仓库的原样副本，未经任何修改。
+  - 做什么：存放 subtaskA/（3 个 CSV）和 subtaskB/（7 个留一域文件夹 × 3 个
+    CSV）共 24 个 CSV，是本项目唯一的数据来源。
+  - 为什么这样设计：src/data/prepare.py 只从这里读、从不写，configs/base.yaml
+    也把它标为 raw_root（只读，勿改）。原始数据与派生数据严格分离——上游数据可追
+    溯、可校验，二次产物永远不污染原始文件。
+
+  src/ — 自己的源码包（核心）
+
+  按职责垂直切分为 6 个子包，分层依赖单向向下（common 被所有人用，serve
+  只在部署层用）：
+
+  ┌──────────┬─────────────────────────┬───────────────────────────────────┐
+  │   子包   │          职责           │             关键文件              │
+  ├──────────┼─────────────────────────┼───────────────────────────────────┤
+  │ src/comm │ 配置加载 + 输入模板     │ config.py、format.py              │
+  │ on/      │                         │                                   │
+  ├──────────┼─────────────────────────┼───────────────────────────────────┤
+  │ src/data │ 读取/预处理/划分/增强/D │ prepare.py、split.py、dataset.py  │
+  │ /        │ ataset                  │ 、augment/                        │
+  ├──────────┼─────────────────────────┼───────────────────────────────────┤
+  │ src/mode │ 底座、分类器、DANN、损  │ classifier.py、dann.py、losses.py │
+  │ ls/      │ 失                      │                                   │
+  ├──────────┼─────────────────────────┼───────────────────────────────────┤
+  │ src/trai │ 训练循环与单折入口      │ trainer.py、run_fold.py           │
+  │ n/       │                         │                                   │
+  ├──────────┼─────────────────────────┼───────────────────────────────────┤
+  │ src/eval │ 指标、汇总表、统计检验  │ metrics.py、report.py、stats.py   │
+  │ /        │                         │                                   │
+  ├──────────┼─────────────────────────┼───────────────────────────────────┤
+  │ src/serv │ FastAPI 推理 + 模型导出 │ app.py、export.py                 │
+  │ e/       │                         │                                   │
+  └──────────┴─────────────────────────┴───────────────────────────────────┘
+
+  configs/ — 实验配置（关注点分离）
+
+  - base.yaml：训练与推理共用的基础事实（路径、标签映射、输入模板、底座、训练超
+    参）。
+  - da.yaml：数据增强预算与开关（per_target: 3 直击「94%
+    目标只出现一次」的长尾）。
+  - dg.yaml：领域泛化损失权重（L = λc·L_CE + λs·L_SupCon + λp·L_Proto + 
+    λd·L_Domain）。
+
+  data/ — 数据产物（可再生，不进版本库）
+
+  - interim/：prepare.py 把 24 个 CSV 归一化成单一 schema 的 all.parquet +
+    manifest.json（含源文件 sha256）。
+  - processed/splits/：严格零样本划分（A 目标不相交 / B 每域留一）。
+  - processed/augmented/：数据增强产物（当前空，.gitkeep 占位）。
+
+  outputs/ — 运行输出
+
+  logs/ ckpt/ tables/ figs/ 四个子目录，全部 .gitkeep 占位、内容被 .gitignore
+  排除。
+
+  scripts/ — 编排脚本
+
+  - check_protocol.py：零样本协议守卫（报告原始划分问题 + 验证严格划分
+    PASS/FAIL）。
+  - run_all_seeds.sh：批量跑多个随机种子（对齐 README「至少 5 个种子」的协议）。
+
+  依赖文件（三档拆分）
+
+  - requirements.txt：核心（torch + HF 生态 + 数值 + 可视化），在 dl_pytorch env
+    下锁定版本。
+  - requirements-dev.txt：-r requirements.txt + pytest。
+  - requirements-serve.txt：-r requirements.txt + fastapi/uvicorn。
+
+  ---
+
+  为什么这样设计（贯穿全局的几个原则）
+
+  1. 单一事实来源（Single Source of Truth）
+  标签映射（labels: [支持,反对,中立]）、输入模板（"{target} [SEP] 
+  {text}"）、路径、超参只在 base.yaml + format.py 定义。训练 dataset.py 和线上
+  app.py 都走同一个
+  build_input()，从根本上防止「训练与推理模板不一致」这类经典线上事故。
+
+  2. 数据「三层不重叠」+ 只读上游
+  raw（只读）→ interim（归一化）→ processed（划分/增强）
+  层层派生，中间产物由脚本再生所以全部 .gitignore，只留 .gitkeep
+  占位。manifest.json 记录每个源 CSV 的 sha256，保证可复现。
+
+  3. 研究口径先冻结、再编码
+  README 第九节把「Macro-F1 主指标 / 中立 F1 关键 / 5 种子 / Wilcoxon + Holm /
+  严格零样本」写成硬约定，check_protocol.py
+  把这些约定变成可执行守卫，eval/stats.py
+  实现统计检验。设计意图是「事后不改口径」。
+
+  4. 关注点分离到配置而非代码
+  数据增强预算（da.yaml）和 DG
+  损失权重（dg.yaml）与基础训练（base.yaml）分开，开关默认全
+  false——先跑无增强基线，再逐模块消融，符合论文消融实验的需求。
+
+  5. src/ 是可安装包，不是散落脚本
+  pyproject.toml 显式声明 8 个 packages，所有入口用 python -m src.xxx
+  调用，scripts/ 只做编排。这样 import 路径稳定（from src.data.constants import 
+  ...），IDE 跳转和单元测试都干净。
+
+  ---
+
+  一句话总结这个骨架的设计意图：把「研究可复现、协议可守卫、训练/推理一致」三个
+  目标工程化——上游数据只读、中间产物可再生、配置单一事实、口径冻结成脚本。这也是
+  README 里「早期阶段」的真实写照：骨架和 EDA
+  已就绪，augment/llm.py、augment/edda.py、serve 等还留着
+  TODO，等数据增强和建模代码逐步落地。
+
+  需要我深入讲某一块（比如配置如何合并、或 strict split 的协议细节）吗？
+
+✻ Baked for 1m 5s · done 15:13
+
+※ recap: You asked me to explain your project's directory skeleton; I finished that walkthrough. Next action is up to you, for example a deeper dive into config merging or the strict split protocol. (disable recaps in /config)

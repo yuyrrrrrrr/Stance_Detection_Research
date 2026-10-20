@@ -48,9 +48,9 @@ def build_subtaskB(all_df: pd.DataFrame, out: Path):
         fold.mkdir(parents=True, exist_ok=True)
 
         # 测试 = 留出域（单域）；训练/验证 = 其它 6 域且 in_use==1
-        test = b[(b["left_out_domain"] == dom) & (b["split"] == "test")]
-        src = b[(b["left_out_domain"] == dom) & (b["split"].isin(["train", "val"]))]
-        src = src[src["in_use"] == "1"]  # 过滤 In Use==0（LexsimTopics）
+        test = b[(b["domain_fold"] == dom) & (b["split"] == "test")]
+        src = b[(b["domain_fold"] == dom) & (b["split"].isin(["train", "val"]))]
+        src = src[src["in_use"] == 1]  # 过滤 In Use==0（LexsimTopics）
         assert set(test["domain"].unique()) == {dom}, "测试集应为纯单域"
         assert dom not in set(src["domain"].unique()), "训练/验证不得包含留出域"
 

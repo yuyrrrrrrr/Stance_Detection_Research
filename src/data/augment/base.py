@@ -18,7 +18,7 @@ class Augmenter(ABC):
 
     @abstractmethod
     def augment(self, df: pd.DataFrame) -> pd.DataFrame:
-        """输入训练集子表（含 text/target/label_id 等列），返回新增的增强行（aug_style 已标）。"""
+        """输入训练集子表（含 text/target/stance_id 等列），返回新增的增强行（aug_style 已标）。"""
 
 
 def quality_gates(df: pd.DataFrame, original: pd.DataFrame,
@@ -37,7 +37,7 @@ def quality_gates(df: pd.DataFrame, original: pd.DataFrame,
     if label_checker is not None:
         before = len(kept)
         mask = kept.apply(
-            lambda r: label_checker(r["text"], r["target"]) == r["label_id"], axis=1)
+            lambda r: label_checker(r["text"], r["target"]) == r["stance_id"], axis=1)
         kept = kept[mask]
         print(f"  [gate] label_consistency 剔除 {before - len(kept)} 行")
 

@@ -13,17 +13,18 @@ from src.common.format import build_input
 class StanceDataset(Dataset):
     """一条样本 -> {input_ids, attention_mask, label, domain_id, target_id}。
 
-    target_id 供 SupCon 区分「同/不同目标」；domain_id 供 DANN 域判别。
+    stance_id（立场标签 0/1/2）读入后放入 batch key "label"；target_id 供 SupCon 区分
+    「同/不同目标」；domain_id 供 DANN 域判别。
     """
 
     def __init__(self, df, tokenizer, template: str, max_length: int,
-                 label_id_col: str = "label_id", domain_id_col: str = "domain_id",
+                 stance_id_col: str = "stance_id", domain_id_col: str = "domain_id",
                  target_id_col: str = "target_id"):
         self.df = df.reset_index(drop=True)
         self.tokenizer = tokenizer
         self.template = template
         self.max_length = max_length
-        self.label_id_col = label_id_col
+        self.stance_id_col = stance_id_col
         self.domain_id_col = domain_id_col
         self.target_id_col = target_id_col
 
@@ -38,7 +39,7 @@ class StanceDataset(Dataset):
         item = {
             "input_ids": enc["input_ids"],
             "attention_mask": enc["attention_mask"],
-            "label": int(row[self.label_id_col]),
+            "label": int(row[self.stance_id_col]),  # stance_id(0/1/2) -> batch key "label"
         }
         if self.domain_id_col in self.df.columns:
             item["domain_id"] = int(row[self.domain_id_col])

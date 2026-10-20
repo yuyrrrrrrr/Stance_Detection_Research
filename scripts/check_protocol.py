@@ -15,27 +15,39 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd
 
 from src.common.config import Config
-from src.data.constants import DOMAIN_ORDER
-from src.data.prepare import load_raw
+from src.data.constants import DOMAIN_FOLDERS, DOMAIN_ORDER, SPLIT_FILES
+
+
+def _read_raw_csv(path: Path) -> pd.DataFrame:
+    return pd.read_csv(path, encoding="utf-8-sig", dtype=str)
 
 
 def report_raw(cfg: Config):
-    """报告原始划分的已知问题（这些是上游数据的固有属性，不是本项目的错误）。"""
-    df = load_raw(cfg)
-    a = df[df["subtask"] == "A"]
-    tr = set(a[a["split"] == "train"]["target"])
-    va = set(a[a["split"] == "val"]["target"])
-    te = set(a[a["split"] == "test"]["target"])
+    """报告原始划分的已知问题（这些是上游数据的固有属性，不是本项目的错误）。
+
+    直接读上游原始 CSV（不做清洗、不依赖数据清洗管线），保证「原始」口径。
+    """
+    raw = cfg.raw_root
+
+    # Subtask A：目标重叠（原始 target，未做空白归一化）
+    a = {}
+    for split, fname in SPLIT_FILES.items():
+        df = _read_raw_csv(raw / "subtaskA" / fname)
+        a[split] = set(df["Target 1"])
     print("=" * 70)
     print("[1] 原始划分报告（上游数据固有属性）")
     print("=" * 70)
-    print(f"  Subtask A 目标重叠：train∩val={len(tr & va)}  train∩test={len(tr & te)}  "
-          f"val∩test={len(va & te)}")
+    print(f"  Subtask A 目标重叠：train∩val={len(a['train'] & a['val'])}  "
+          f"train∩test={len(a['train'] & a['test'])}  val∩test={len(a['val'] & a['test'])}")
     print("    -> 少量重叠多为模板化 claim，严格划分（split.py）会剔除。")
-    for dom in DOMAIN_ORDER:
-        src = df[(df["subtask"] == "B") & (df["left_out_domain"] == dom)
-                 & (df["split"].isin(["train", "val"]))]
-        print(f"  Subtask B {dom}: 原始 train/val 含 In Use==0 = {int((src['in_use'] == '0').sum())}")
+
+    # Subtask B：In Use==0 样本量（每个留出域的 train/val）
+    for folder, dom in DOMAIN_FOLDERS.items():
+        n = 0
+        for split in ("train", "val"):
+            df = _read_raw_csv(raw / "subtaskB" / folder / SPLIT_FILES[split])
+            n += int((df["In Use"] == "0").sum())
+        print(f"  Subtask B {dom}: 原始 train/val 含 In Use==0 = {n}")
 
 
 def verify_strict(cfg: Config):
@@ -65,7 +77,7 @@ def verify_strict(cfg: Config):
         te = pd.read_parquet(fold / "test.parquet")
         test_dom = set(te["domain"].unique())
         train_dom = set(tr["domain"].unique())
-        n_inuse0 = int((tr["in_use"] == "0").sum())
+        n_inuse0 = int((tr["in_use"] == 0).sum())
         cond = (test_dom == {dom}) and (dom not in train_dom) and (n_inuse0 == 0)
         ok &= cond
         print(f"  Subtask B {dom}: 测试域={test_dom} 训练域数={len(train_dom)} "
