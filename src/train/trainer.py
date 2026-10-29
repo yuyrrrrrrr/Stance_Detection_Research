@@ -2,17 +2,18 @@
 """训练循环：L_total = λc·L_CE + λs·L_SupCon + λp·L_Proto + λd·L_Domain。
 
 - 域对抗（DANN）按 ganin 调度逐渐增大梯度反转系数。
+- 支持 CUDA AMP（fp16）；CPU 自动关闭。
 - EDDA 表征扰动为 TODO（训练时内联）。
 """
 from __future__ import annotations
 
+from contextlib import nullcontext
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
+import numpy as np
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
-from transformers import get_linear_schedule_with_warmup
 
 from src.eval.metrics import macro_f1
 from src.models.dann import ganin_lambda
@@ -24,9 +25,15 @@ class Trainer:
                  device: str = "cpu", log_dir: Optional[Path] = None):
         self.model = model.to(device)
         self.device = device
+        self.device_type = torch.device(device).type
         self.training_cfg = training_cfg
         self.dg_cfg = dg_cfg
         self.log_dir = log_dir or Path("outputs/logs")
+
+        # AMP 只在 CUDA 上启用；CPU 调试时即使配置 fp16=true 也自动关闭
+        self.use_amp = bool(training_cfg.get("fp16", False)) and self.device_type == "cuda"
+        self.scaler = torch.cuda.amp.GradScaler() if self.use_amp else None
+        self.history = []
 
         no_decay = {"bias", "LayerNorm.weight"}
         grouped = [
@@ -46,6 +53,11 @@ class Trainer:
         return {k: v.to(self.device) if isinstance(v, torch.Tensor) else v
                 for k, v in batch.items()}
 
+    def _autocast(self):
+        if self.use_amp:
+            return torch.autocast(device_type="cuda", dtype=torch.float16)
+        return nullcontext()
+
     def train(self, train_loader: DataLoader, val_loader: DataLoader,
               epochs: int, scheduler=None, total_steps: int = 0):
         global_step = 0
@@ -56,37 +68,47 @@ class Trainer:
             self.model.train()
             for batch in train_loader:
                 batch = self._to(batch)
-                logits, feats = self.model(batch["input_ids"], batch["attention_mask"],
-                                           return_feats=True)
+                with self._autocast():
+                    logits, feats = self.model(batch["input_ids"], batch["attention_mask"],
+                                               return_feats=True)
 
-                domain_logits, domain_ids = None, None
-                if self.model.domain_disc is not None and "domain_id" in batch:
-                    p = global_step / total
-                    lam = ganin_lambda(p, self.dg_cfg["domain"].get("alpha", 10.0)) \
-                        if self.dg_cfg["domain"].get("lambda_schedule") == "ganin" \
-                        else self.dg_cfg["domain"].get("grl_lambda", 1.0)
-                    self.model.grl.set_lambda(lam)
-                    domain_logits = self.model.forward_domain(feats)
-                    domain_ids = batch["domain_id"]
+                    domain_logits, domain_ids = None, None
+                    if self.model.domain_disc is not None and "domain_id" in batch:
+                        p = global_step / total
+                        lam = ganin_lambda(p, self.dg_cfg["domain"].get("alpha", 10.0)) \
+                            if self.dg_cfg["domain"].get("lambda_schedule") == "ganin" \
+                            else self.dg_cfg["domain"].get("grl_lambda", 1.0)
+                        self.model.grl.set_lambda(lam)
+                        domain_logits = self.model.forward_domain(feats)
+                        domain_ids = batch["domain_id"]
 
-                # TODO(EDDA): 在 feats 上加对抗扰动作为表征级增强
+                    # TODO(EDDA): 在 feats 上加对抗扰动作为表征级增强
 
-                losses = self.loss_fn(
-                    logits, feats, batch["label"],
-                    target_ids=batch.get("target_id"),
-                    domain_logits=domain_logits, domain_ids=domain_ids,
-                    num_classes=self.model.classifier.out_features)
+                    losses = self.loss_fn(
+                        logits, feats, batch["label"],
+                        target_ids=batch.get("target_id"),
+                        domain_logits=domain_logits, domain_ids=domain_ids,
+                        num_classes=self.model.classifier.out_features)
 
-                self.optimizer.zero_grad()
-                losses["total"].backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(),
-                                               self.training_cfg.get("grad_clip", 1.0))
-                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
+                if self.scaler is not None:
+                    self.scaler.scale(losses["total"]).backward()
+                    self.scaler.unscale_(self.optimizer)
+                    torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(), self.training_cfg.get("grad_clip", 1.0))
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    losses["total"].backward()
+                    torch.nn.utils.clip_grad_norm_(
+                        self.model.parameters(), self.training_cfg.get("grad_clip", 1.0))
+                    self.optimizer.step()
                 if scheduler is not None:
                     scheduler.step()
                 global_step += 1
 
             f1 = self.evaluate(val_loader)
+            self.history.append({"epoch": epoch + 1, "val_macro_f1": float(f1)})
             print(f"  [epoch {epoch+1}/{epochs}] val macro-F1 = {f1:.4f}")
             if f1 > best_f1:
                 best_f1, best_state = f1, {k: v.detach().cpu().clone()
@@ -98,11 +120,19 @@ class Trainer:
 
     @torch.no_grad()
     def evaluate(self, loader: DataLoader) -> float:
+        golds, preds, _ = self.predict(loader)
+        return macro_f1(golds, preds)
+
+    @torch.no_grad()
+    def predict(self, loader: DataLoader) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """返回 (gold, pred, probs)，顺序与 loader.dataset 的行顺序一致。"""
         self.model.eval()
-        preds, golds = [], []
+        golds, preds, probs = [], [], []
         for batch in loader:
             batch = self._to(batch)
-            logits = self.model(batch["input_ids"], batch["attention_mask"])
-            preds.append(logits.argmax(dim=-1).cpu())
-            golds.append(batch["label"].cpu())
-        return macro_f1(torch.cat(preds), torch.cat(golds))
+            with self._autocast():
+                logits = self.model(batch["input_ids"], batch["attention_mask"])
+            probs.append(torch.softmax(logits.float(), dim=-1).cpu().numpy())
+            preds.append(logits.argmax(dim=-1).cpu().numpy())
+            golds.append(batch["label"].cpu().numpy())
+        return (np.concatenate(golds), np.concatenate(preds), np.concatenate(probs))

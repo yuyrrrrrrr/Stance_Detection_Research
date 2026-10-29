@@ -33,7 +33,8 @@ data/processed/augmented/*
 *.onnx
 .cache/
 cache/
-models/
+# 只忽略项目根目录下的权重目录；不要用 models/，否则会误伤 src/models/ 源码
+/models/
 huggingface/
 
 # ===== 输出（日志/ckpt/表/图）=====
@@ -43,6 +44,8 @@ outputs/ckpt/*
 !outputs/ckpt/.gitkeep
 outputs/tables/*
 !outputs/tables/.gitkeep
+outputs/predictions/*
+!outputs/predictions/.gitkeep
 outputs/figs/*
 !outputs/figs/.gitkeep
 

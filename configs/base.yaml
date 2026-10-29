@@ -1,7 +1,7 @@
 # =============================================================================
 # base.yaml —— 训练与推理共用的基础配置（唯一事实来源）
 # 模板、max_len、标签映射、路径、底座模型、训练超参均在此。
-# 增强预算见 da.yaml，领域泛化损失权重见 dg.yaml。
+# 增强预算见 da.yaml；损失权重见 baseline.yaml（CE-only）或 dg.yaml（完整 DG）。
 # =============================================================================
 
 task: zssd
@@ -12,7 +12,7 @@ paths:
   interim: data/interim                                    # 预处理 parquet
   splits: data/processed/splits                            # 严格零样本划分清单
   augmented: data/processed/augmented                      # 数据增强产物
-  outputs: outputs                                         # logs/ckpt/tables/figs
+  outputs: outputs                                         # logs/ckpt/tables/predictions/figs
 
 # ---- 标签映射（唯一来源，训练与推理共用；0=支持 1=反对 2=中立）----
 labels: [支持, 反对, 中立]
@@ -23,7 +23,10 @@ num_labels: 3
 #   [CLS] {target} [SEP] {text} [SEP]
 input_template:
   pattern: "{target} [SEP] {text}"
-  max_length: 128
+  # 实测：128 会截断约 37% 的 B 折训练样本（截掉的是文本尾部）；
+  # 256 可覆盖全部样本（最长约 282 tokens）。10GB 3080 上配合 AMP 使用 batch 32；
+  # 若显存不足，把 batch_size 降到 16。
+  max_length: 256
 
 # ---- 底座模型 ----
 model:
@@ -45,6 +48,7 @@ training:
   weight_decay: 0.01
   seed: 42
   grad_clip: 1.0
-  fp16: false                              # 本地 CPU 调试 false；GPU 训练可 true
-  eval_steps: 100
-  save_total_limit: 1
+  fp16: true                               # GPU 上启用 AMP；CPU 自动关闭
+  deterministic: true                      # 固定 cudnn/随机种子，保证多种子可复现
+  eval_steps: 100                          # 预留（当前按 epoch 评估）
+  save_total_limit: 1                      # 预留（当前每折只保留最终 ckpt）

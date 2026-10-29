@@ -4,7 +4,7 @@
 >
 > 方法主线：**预训练语言模型 + 数据增强（DA）+ 领域泛化（DG）**。
 
-**项目状态：🚧 早期阶段** —— 数据勘察与 EDA 已完成，零样本划分与建模代码开发中。
+**项目状态：🚧 研发中** —— 数据勘察、严格零样本划分、**Subtask B 基线训练与 test 评测回路**已完成；数据增强与完整 DG 消融开发中。
 
 ---
 
@@ -123,7 +123,8 @@
   - Subtask A 的 train/val/test 目标**并非严格不相交**（存在少量高度模板化的重叠主张目标），因此本项目默认采用「严格协议」并同时报告原始划分结果作对照。
   - Subtask B 的 `In Use == 0` 样本（LexsimTopics，与测试目标字面高度相似）**必须**从训练/验证中过滤，否则零样本假设被破坏。
 - ✅ **完整工作流设计**：EDA → 数据预处理 → 严格零样本划分 → 数据增强 → 模型选择 → 训练 → 领域泛化微调 → 评估 → 调优 → 最终评估 → 部署。
-- ✅ **硬件与可行性评估**：本地仅 RTX 3050 Laptop（4 GB 显存），可完成调试与评估基建；全量多随机种子训练计划上云执行。
+- ✅ **硬件与可行性评估**：本地仅 RTX 3050 Laptop（4 GB 显存），可完成调试与评估基建；全量多随机种子训练在云上 RTX 3080 执行。
+- ✅ **Subtask B 基线训练与评测回路**：`hfl/chinese-roberta-wwm-ext` + CE-only（`configs/baseline.yaml`）；warmup/线性衰减、AMP、完整随机种子、test Macro-F1 / 中立类 F1 / 混淆矩阵 / 逐样本预测均已落盘。
 
 ---
 
@@ -143,12 +144,12 @@ L_total = L_CE + λ_s · L_SupCon + λ_p · L_Proto + λ_d · L_Domain
 
 - [x] EDA 与数据事实确认
 - [x] 研究协议与评测口径设计
-- [ ] **严格零样本划分**：Subtask A 迭代剔除与测试集重叠的目标；Subtask B 过滤 `In Use == 0` 并断言测试域未出现在训练中
-- [ ] **数据预处理**：统一 24 个 CSV 为单一 schema，产出可复现的划分清单（含文件校验值）
+- [x] **严格零样本划分**：Subtask A 迭代剔除与测试集重叠的目标；Subtask B 过滤 `In Use == 0` 并断言测试域未出现在训练中
+- [x] **数据预处理**：统一 24 个 CSV 为单一 schema，产出可复现的划分清单（含文件校验值）
 - [ ] **数据增强**：目标改写／LLM 条件生成／EDDA／回译，配「标签一致性 + 去重 + 泄漏扫描」三级质量闸门，并人工抽检标签一致性
-- [ ] **建模与训练**：`chinese-roberta-wwm-ext` 主底座 + `bert-base-chinese` 对照，多随机种子训练
-- [ ] **领域泛化微调**：监督对比学习 + 域对抗（真实域 × 增强风格）+ 原型对齐，逐模块消融
-- [ ] **评估与统计**：以 Macro-F1 为主指标、**中立类 F1 为关键分析指标**，至少 5 个随机种子报告均值±标准差，与基线做 Wilcoxon 符号秩检验（Holm 校正）
+- [x] **基线建模与训练（Subtask B）**：`chinese-roberta-wwm-ext` + CE-only 基线，max_length=256、warmup/线性衰减、AMP、多随机种子
+- [ ] **对照底座与完整方法**：`bert-base-chinese` 对照；监督对比学习 + 域对抗（真实域 × 增强风格）+ 原型对齐，逐模块消融
+- [~] **评估与统计**：单折 test Macro-F1 / 中立类 F1 / 混淆矩阵 / 逐样本预测已落盘；5 seed 均值±标准差与 Wilcoxon/Holm 汇总待接入
 - [ ] **部署**：FastAPI 服务，提供**支持／反对／中立**三分类 API（文本 + 目标 → 立场与概率），并保证线上推理与训练使用同一输入模板
 - [ ] **论文／技术报告**
 
@@ -179,30 +180,66 @@ Stance_Detection_Research/
       ├─ EDA_report_outline.md            # 报告大纲
       └─ output/figs/                     # 10 张分析图表
 
-# 以下目录为规划中，将随开发逐步落地：
-# src/       训练、增强、评估、服务代码（含统一输入模板模块）
-# configs/   实验配置（模板、超参、增强预算、损失权重）
+# 以下目录已落地：
+# src/       数据、模型、训练、评估、服务代码（含统一输入模板模块）
+# configs/   base.yaml / baseline.yaml（CE-only）/ dg.yaml（完整 DG）/ da.yaml
 # data/      预处理产物与划分清单（不进版本库的由 .gitignore 排除）
-# scripts/   协议检查、批量跑种子、一键复现
-# outputs/   日志、checkpoint、结果表与图
-# docs/      工作流文档、误差分析、API 文档
+# scripts/   check_protocol.py、run_all_seeds.sh、setup_cloud.sh
+# outputs/   logs / ckpt / tables / predictions / figs
+# tests/     零样本协议与划分一致性测试
 ```
 
 ---
 
 ## 八、快速开始
 
-> 当前可直接运行的是 **EDA 部分**（训练、增强与服务的代码开发中，尚未提交）。
+> 当前实验**只使用 Subtask B（领域级零样本）**；Subtask A 的代码保留兼容，但不参与训练。
+
+### 8.1 本地 EDA（可选）
 
 ```bash
-# 1) 环境（当前 EDA 仅需以下依赖）
 pip install pandas numpy matplotlib scikit-learn
-
-# 2) 基础 EDA：打印数据规模、标签分布、目标稀疏度、跨域差异等统计
 python C-STANCE-main/C-STANCE-main/analysis/eda.py
-
-# 3) 完整 EDA：额外输出 10 张图表到 analysis/output/figs/
 python C-STANCE-main/C-STANCE-main/analysis/eda_full.py
+```
+
+### 8.2 云端训练（RTX 3080 / Linux）
+
+镜像没有 PyTorch 2.4 不影响：代码只用稳定 API，**优先复用镜像自带的 GPU torch（2.1–2.5）**。若镜像确实没有可用 torch，脚本会按 `TORCH_INDEX_URL` 安装 2.4.1。
+
+```bash
+# 0) 克隆仓库（原始 C-STANCE CSV 已随仓库提供）
+cd Stance_Detection_Research
+
+# 1) 一键安装 + 数据重建 + 协议检查 + 模型下载
+bash scripts/setup_cloud.sh
+
+# 2) 单折 CE-only 基线（推荐先跑这个）
+python -m src.train.run_fold --subtask B --fold 环保 --seed 42 \
+    --loss-config baseline
+
+# 3) 完整 DG 方法（SupCon + Proto + DANN）
+python -m src.train.run_fold --subtask B --fold 环保 --seed 42 \
+    --loss-config dg
+
+# 4) 5 个随机种子
+bash scripts/run_all_seeds.sh B 环保 42 43 44 45 46
+LOSS_CONFIG=dg bash scripts/run_all_seeds.sh B 环保 42 43 44 45 46
+```
+
+关键设置：
+
+- `configs/base.yaml`：`max_length=256`（128 会截断约 37% 的样本）、`batch_size=32`、`fp16=true`（GPU 自动 AMP，CPU 自动关闭）、`deterministic=true`；
+- `configs/baseline.yaml`：CE-only 基线；`configs/dg.yaml`：完整 DG 损失；
+- 显存不足时把 `batch_size` 降到 16；20 核机器可把 `num_workers` 提到 8；
+- 国内云建议 `export HF_ENDPOINT=https://hf-mirror.com`，并把 `model.cache_dir` 指到数据盘（如 `/root/autodl-tmp/hf`）。
+
+每次训练产出：
+
+```
+outputs/ckpt/B_<fold>_seed<seed>.pt                          # 权重 + 关键指标
+outputs/tables/B_<fold>_seed<seed>_metrics.json              # Macro-F1 / 中立类 F1 / 混淆矩阵 / 分类报告
+outputs/predictions/B_<fold>_seed<seed>_predictions.parquet  # 逐样本概率与预测
 ```
 
 **读完 EDA 报告后你会知道的三件事**：
