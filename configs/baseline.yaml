@@ -1,0 +1,32 @@
+# =============================================================================
+# baseline.yaml —— CE-only 基线（与 dg.yaml 同 schema，只是 DG 项权重为 0）
+#
+# 用法：
+#   python -m src.train.run_fold --subtask B --fold 环保 --seed 42 \
+#       --loss-config baseline
+#
+# 该文件由 src/common/config.py 作为 dg 配置加载（Config.load(dg="baseline.yaml")）：
+#   - loss.domain = 0  => run_fold 不构造域判别器（num_domains=0）
+#   - loss.supcon/proto = 0 => CombinedLoss 只计算 CE
+# 研究主线（SupCon + Proto + DANN）请用 configs/dg.yaml。
+# =============================================================================
+
+loss:
+  ce: 1.0
+  supcon: 0.0
+  proto: 0.0
+  domain: 0.0
+
+supcon:
+  temperature: 0.1
+
+proto:
+  temperature: 0.1
+
+domain:                        # 保留结构，基线不启用（loss.domain=0）
+  discriminator_hidden: 256
+  num_real_domains: 7
+  aug_styles: [orig, eda, backtranslation, llm, edda]
+  lambda_schedule: ganin
+  grl_lambda: 1.0
+  alpha: 10.0
